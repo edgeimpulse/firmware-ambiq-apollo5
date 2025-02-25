@@ -1,0 +1,35 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Ambiq Apollo5 Debug (Cortex-Debug)",
+            "cwd": "${workspaceFolder}",
+            "executable": "${workspaceRoot}/build/apollo5b_evb/arm-none-eabi/firmware-ambiq-apollo5.axf",            
+            "request": "launch",
+            "type": "cortex-debug",
+            "runToEntryPoint": "main",
+            "servertype": "jlink",
+            "showDevDebugOutput": "parsed",
+            "device": "AP510NFA-CBR",
+            "interface": "swd",
+            "rtos": "FreeRTOS",
+            "svdFile": "${workspaceRoot}/pack/svd/board.svd",
+            "preLaunchCommands": [
+                "monitor speed 15000"
+            ],
+        },
+        {
+            "name": "Ambiq Apollo5 Attach (Cortex-Debug)",
+            "cwd": "${workspaceFolder}",
+            "executable": "${workspaceRoot}/build/apollo5b_evb/arm-none-eabi/firmware-ambiq-apollo5.axf",            
+            "request": "attach",
+            "type": "cortex-debug",
+            "servertype": "jlink",
+            "showDevDebugOutput": "parsed",
+            "device": "AP510NFA-CBR",
+            "interface": "swd",
+            "rtos": "FreeRTOS",
+            "svdFile": "${workspaceRoot}/pack/svd/board.svd",         
+        }    
+    ],
+}

@@ -1,0 +1,35 @@
+{
+    "files.associations": {
+        "*.h": "c",
+        "stdexcept": "cpp",
+        "string": "cpp",
+        "variant": "c",
+        "cstring": "c",
+        "array": "c",
+        "span": "c",
+        "string_view": "c",
+        "vector": "c",
+        "__bit_reference": "cpp",
+        "__node_handle": "cpp",
+        "bitset": "cpp",
+        "deque": "cpp",
+        "__memory": "cpp",
+        "limits": "cpp",
+        "optional": "cpp",
+        "ratio": "cpp",
+        "tuple": "cpp",
+        "__locale": "cpp",
+        "ios": "cpp",
+        "config.hpp": "c",
+        "__availability": "cpp",
+        "__config": "cpp",
+        "typeinfo": "cpp"
+    },
+
+    // set me for debugging
+    "cortex-debug.armToolchainPath": "/Users/francescovarani/work/toolchain/arm-gnu-toolchain-13.3.rel1-darwin-arm64-arm-none-eabi/bin",
+    "cortex-debug.JLinkGDBServerPath": "/Applications/SEGGER/JLink_V810f/JLinkGDBServer",
+
+    "cmake.configureOnOpen": false,
+    "cortex-debug.variableUseNaturalFormat": false,
+}
