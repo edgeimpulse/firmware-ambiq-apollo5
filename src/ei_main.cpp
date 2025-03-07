@@ -125,7 +125,12 @@ static void ei_main_task(void *pvParameters)
 
             while ((uint8_t)data != 0xFF) {
                 if ((is_inference_running() == true) && (data == 'b') && (in_rx_loop == false)) {
-                    ei_stop_impulse();
+                    xEventGroupSetBits(common_event_group, EVENT_WAIT_LAST_INFERENCE);
+
+                    // wait till inference is done
+                    while (is_inference_running() == true) {
+                        vTaskDelay(1);
+                    }
                     at->print_prompt();
                     continue;
                 }

@@ -76,13 +76,18 @@ void ei_run_impulse(void)
             }
             ei_printf("Recording\n");            
             ei_microphone_inference_reset_buffers();
+            if (state == INFERENCE_STOPPED) {
+                return;
+            }
             state = INFERENCE_SAMPLING;
             // fall down
         }
         case INFERENCE_SAMPLING:
         {
             ei_mic_run_inference();
-
+            if (state == INFERENCE_STOPPED) {
+                return;
+            }
             state = INFERENCE_DATA_READY;
             if (continuous_mode == false) {
                 ei_printf("Recording done\n");

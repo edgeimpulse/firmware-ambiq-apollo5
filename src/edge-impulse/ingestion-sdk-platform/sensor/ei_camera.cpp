@@ -66,6 +66,14 @@ volatile bool dmaComplete = false; // ISR-land
 volatile bool pictureTaken = false;
 volatile uint32_t buffer_length = 0;
 
+// Camera needs to handle interrupt from the corrent ISR
+#define iom_isr am_iom_isrx(CAM_SPI_IOM)
+#define am_iom_isrx(n) am_iom_isr(n)
+#define am_iom_isr(n) am_iomaster##n##_isr
+extern "C" void iom_isr(void) {
+    ns_spi_handle_iom_isr();
+}
+
 ns_camera_config_t camera_config = {
     .api = &ns_camera_V1_0_0,
     .spiSpeed = CAM_SPI_SPEED,

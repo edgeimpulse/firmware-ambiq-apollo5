@@ -31,68 +31,90 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
- 
-#include "FreeRTOS.h"
-#include "task.h"
-#include "event_groups.h"
-#include "common_events.h"
-#include "inference_task.h"
-#include "inference/ei_run_impulse.h"
+
 #include "edge-impulse-sdk/porting/ei_classifier_porting.h"
+#if EI_PORTING_ANDROID== 1
 
-// Inference task parameters
-#define INFRENCE_TASK_STACK_SIZE_BYTE        (4096u)
-#define INFRENCE_TASK_PRIORITY               (configMAX_PRIORITIES - 7)
-static TaskHandle_t inference_task_handle = NULL;
-static void inference_task(void *pvParameters);
+#include <inttypes.h>
+#include <math.h>
+#include <stdio.h>
+#include <time.h>
+#include <unistd.h>
+#include <stdarg.h>
+#include <stdlib.h>
+#include <android/log.h>
 
-void inference_task_start(void)
-{
-    /* Only init once */
-    if (inference_task_handle != NULL) {
-        return;
-    }
-
-    if (xTaskCreate(inference_task,
-        (const char*) "Inference task",
-        INFRENCE_TASK_STACK_SIZE_BYTE / 4, // in words
-        NULL, //pvParameters
-        INFRENCE_TASK_PRIORITY, //uxPriority
-        &inference_task_handle) != pdPASS) {
-        ei_printf("Failed to create Display task\r\n");
-    }
+__attribute__((weak)) EI_IMPULSE_ERROR ei_run_impulse_check_canceled() {
+    return EI_IMPULSE_OK;
 }
 
 /**
- * @brief 
- * 
- * @param pvParameters 
+ * Cancelable sleep, can be triggered with signal from other thread
  */
-void inference_task(void *pvParameters)
-{
-    (void)pvParameters;
-    EventBits_t event_bit;
-
-    while (is_inference_running() == true) {
-        event_bit = xEventGroupWaitBits(common_event_group, 
-            EVENT_WAIT_LAST_INFERENCE,    //  uxBitsToWaitFor 
-            pdTRUE,                 //  xClearOnExit
-            pdFALSE,                //  xWaitForAllBits
-            0);
-
-        if (event_bit & EVENT_WAIT_LAST_INFERENCE) {
-            ei_stop_impulse();
-            break;
-        }
-        ei_run_impulse();
-    }
-
-    if (inference_task_handle != NULL) {
-        inference_task_handle = NULL;
-        vTaskDelete(NULL);
-    }    
-
-    while(1) {
-        vTaskDelay(portMAX_DELAY);
-    }
+__attribute__((weak)) EI_IMPULSE_ERROR ei_sleep(int32_t time_ms) {
+    usleep(time_ms * 1000);
+    return EI_IMPULSE_OK;
 }
+
+uint64_t ei_read_timer_ms() {
+    return ei_read_timer_us() / 1000;
+}
+
+uint64_t ei_read_timer_us() {
+    uint64_t us; // Milliseconds
+    uint64_t s;  // Seconds
+    struct timespec spec;
+
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &spec);
+
+    s  = spec.tv_sec;
+    us = round(spec.tv_nsec / 1.0e3); // Convert nanoseconds to micros
+    if (us > 999999) {
+        s++;
+        us = 0;
+    }
+
+    return (s * 1000000) + us;
+}
+
+__attribute__((weak)) void ei_printf(const char *format, ...) {
+    va_list myargs;
+    va_start(myargs, format);
+    __android_log_print(ANDROID_LOG_INFO, "MAIN", format, myargs);
+    va_end(myargs);
+}
+
+__attribute__((weak)) void ei_printf_float(float f) {
+    ei_printf("%f", f);
+}
+
+__attribute__((weak)) void ei_putchar(char data)
+{
+    putchar(data);
+}
+
+__attribute__((weak)) char ei_getchar(void)
+{
+    return getchar();
+}
+
+__attribute__((weak)) void *ei_malloc(size_t size) {
+    return malloc(size);
+}
+
+__attribute__((weak)) void *ei_calloc(size_t nitems, size_t size) {
+    return calloc(nitems, size);
+}
+
+__attribute__((weak)) void ei_free(void *ptr) {
+    free(ptr);
+}
+
+#if defined(__cplusplus) && EI_C_LINKAGE == 1
+extern "C"
+#endif
+__attribute__((weak)) void DebugLog(const char* s) {
+    ei_printf("%s", s);
+}
+
+#endif // EI_PORTING_ANDROID == 1

@@ -41,9 +41,7 @@
 #include "model-parameters/model_metadata.h"
 #include "ingestion-sdk-c/sensor_aq_mbedtls_hs256.h"
 #include "hal/am_hal_global.h"
-
-#include "FreeRTOS.h"
-#include "task.h"
+#include "edge-impulse/inference/ei_run_impulse.h"
 
 /* Edge Impulse */
 static bool create_header(sensor_aq_payload_info *payload);
@@ -70,8 +68,6 @@ static uint32_t headerOffset;
 static uint32_t samples_required;
 static uint32_t current_sample;
 
-static TaskHandle_t mic_task_handle = NULL;
-
 AM_SHARED_RW static unsigned char ei_mic_ctx_buffer[1024];
 static sensor_aq_signing_ctx_t ei_mic_signing_ctx;
 static sensor_aq_mbedtls_hs256_ctx_t ei_mic_hs_ctx;
@@ -88,7 +84,8 @@ static sensor_aq_ctx ei_mic_ctx = {
 // High level audio parameters
 #define NUM_CHANNELS        (1)
 #define SAMPLE_RATE         (16000)
-#define SAMPLES_IN_FRAME    (NS_AUDIO_DMA_BUFFER_SIZE * 2)
+#define SAMPLES_IN_FRAME    (NS_AUDIO_DMA_BUFFER_SIZE * 4)
+#define DEFAULT_GAIN        (AM_HAL_PDM_GAIN_P90DB)
 
 bool volatile static g_audioRecording = false;
 bool volatile static g_audioReady = false;
@@ -101,15 +98,11 @@ void audio_frame_callback(ns_audio_config_t *config, uint16_t bytesCollected);
 
 // Audio IPC and config
 uint8_t static g_bufsel = 0; // for pingponging
-alignas(16) AM_SHARED_RW int16_t static audioDataBuffer[2][SAMPLES_IN_FRAME];
-alignas(16) AM_SHARED_RW uint32_t static dmaBuffer[SAMPLES_IN_FRAME * NUM_CHANNELS * 2];
+alignas(16) int16_t static audioDataBuffer[2][SAMPLES_IN_FRAME];
+alignas(16) uint32_t static dmaBuffer[SAMPLES_IN_FRAME * NUM_CHANNELS * 2];
 
 ns_audio_config_t audio_config = {
-#ifdef DYNAMIC_AUDIO_SOURCE
     .api = &ns_audio_V2_1_0,
-#else
-    .api = &ns_audio_V2_0_0,
-#endif
     .eAudioApiMode = NS_AUDIO_API_CALLBACK,
     .callback = audio_frame_callback,
     .audioBuffer = (void *)&audioDataBuffer,
@@ -125,6 +118,8 @@ ns_audio_config_t audio_config = {
     .sOffsetCalib = &sOffsetCalib,
 #endif
 };
+
+#define MIC_BUFFER_READY    (1 << 0)
 
 /**
  * @brief 
@@ -156,8 +151,8 @@ bool ei_microphone_init(void)
     // init audio system
     NS_TRY(ns_audio_init(&audio_config), "Audio initialization Failed.\n");
 
-    // set gain - fault
-    ns_audio_set_gain(AM_HAL_PDM_GAIN_P180DB, AM_HAL_PDM_GAIN_P180DB);
+    // set gain
+    //ns_audio_set_gain(DEFAULT_GAIN, DEFAULT_GAIN);
 
     return true;
 }
@@ -194,7 +189,7 @@ static bool ei_microphone_sample_start(void)
         { { "audio", "wav" } }
     };
 
-    if(n_audio_channels > 1) {
+    if (n_audio_channels > 1) {
         payload.sensors[1] = { "audio2", "wav"};
     }
 
@@ -208,7 +203,7 @@ static bool ei_microphone_sample_start(void)
     samples_required = (uint32_t)((dev->get_sample_length_ms()) / dev->get_sample_interval_ms());
 
     /* Round to even number of samples for word align flash write */
-    if(samples_required & 1) {
+    if (samples_required & 1) {
         samples_required++;
     }
 
@@ -222,40 +217,34 @@ static bool ei_microphone_sample_start(void)
         return false;
     }
 
-    mic_task_handle = xTaskGetCurrentTaskHandle();
-
-    // start audio
-    //if(ns_start_audio(&audio_config)) {
-    //    ei_printf("Failed to start audio\r\n");
-    //}
-
     g_audioReady = false;
     g_audioRecording = true;
-    #if 0
+
+    if (ns_start_audio(&audio_config)) {
+        ei_printf("Failed to start audio\r\n");
+    }
+
     for(int i = 0; i < 10; i++) {
         do{
             __WFI();
-        } while(g_audioReady == false);  // skip the first
+        } while (g_audioReady == false);  // skip the first
         g_audioReady = false;
     }
-    #endif
 
     ei_printf("Sampling...\r\n");
     dev->set_state(eiStateSampling);
 
-    if(ns_start_audio(&audio_config)) {
-        ei_printf("Failed to start audio\r\n");
-    }
+    g_audioReady = false;
+    g_audioRecording = true;
 
     while (current_sample < samples_required) {
         __WFI();
-        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
         ei_mic_thread(&ingestion_callback);
     }
     g_audioRecording = false;
 
     // stop audio
-    if(ns_end_audio(&audio_config)) {
+    if (ns_end_audio(&audio_config)) {
         ei_printf("Failed to end audio\r\n");
     }
 
@@ -272,8 +261,6 @@ static bool ei_microphone_sample_start(void)
         return false;
     }
 
-    mic_task_handle = NULL;
-
     ei_printf("Done sampling, total bytes collected: %lu\n", (current_sample * 2));
     ei_printf("[1/1] Uploading file to Edge Impulse...\n");
     ei_printf("Not uploading file, not connected to WiFi. Used buffer, from=0, to=%lu.\n", (cbor_current_sample + 1 + headerOffset));
@@ -288,15 +275,13 @@ static bool ei_microphone_sample_start(void)
  * @param config 
  * @param bytesCollected 
  */
-void audio_frame_callback(ns_audio_config_t *config, uint16_t bytesCollected) {
-    
+void audio_frame_callback(ns_audio_config_t *config, uint16_t bytesCollected) 
+{
     if (g_audioRecording) {
         ns_audio_getPCM_v2(config, &(audioDataBuffer[g_bufsel][0]));
         g_bufsel ^= 1;
         g_audioReady = true;
-        xTaskNotifyGive(mic_task_handle);
     }
-
 }
 
 /**
@@ -343,12 +328,14 @@ bool ei_microphone_inference_start(uint32_t n_samples, uint8_t n_channels_infere
     }
 
     inference.buf_select = 0;
-    inference.buf_count = 0;
     inference.n_samples = n_samples;    // this represents the number of samples per channel
-    inference.buf_ready = 0;
+    
+    ei_microphone_inference_reset_buffers();
 
+    g_audioRecording = false;
     audio_config.eAudioSource = NS_AUDIO_SOURCE_PDM;
-    if(ns_start_audio(&audio_config)) {
+
+    if (ns_start_audio(&audio_config)) {
         ei_printf("Failed to start audio\r\n");
     }
 
@@ -374,6 +361,10 @@ void ei_microphone_inference_reset_buffers(void)
 {
     inference.buf_ready = 0;
     inference.buf_count = 0;
+
+    memset(inference.buffers[0], 0, inference.n_samples * sizeof(microphone_sample_t) * n_audio_channels);
+    memset(inference.buffers[1], 0, inference.n_samples * sizeof(microphone_sample_t) * n_audio_channels);
+
 }
 
 /**
@@ -384,7 +375,10 @@ void ei_microphone_inference_reset_buffers(void)
  */
 bool ei_microphone_inference_end(void)
 {
-    if(ns_end_audio(&audio_config)) {
+    g_audioReady = false;
+    g_audioRecording = false;
+
+    if (ns_end_audio(&audio_config)) {
         ei_printf("Failed to end audio\r\n");
     }
 
@@ -394,6 +388,10 @@ bool ei_microphone_inference_end(void)
     return true; 
 }
 
+/**
+ * @brief 
+ * 
+ */
 void ei_mic_run_inference(void)
 {
     g_audioReady = false;
@@ -402,7 +400,8 @@ void ei_mic_run_inference(void)
     do {
         __WFI();
         ei_mic_thread(&ei_mic_inference_samples_callback);
-    }while(ei_microphone_inference_is_recording() == true);
+    }while ((ei_microphone_inference_is_recording() == true) && (is_inference_running() == true));
+
     g_audioRecording = false;
 }
 
@@ -561,7 +560,7 @@ static void write_value_to_cbor_buffer(uint8_t *buf, int16_t value)
     uint8_t datatype;
     uint16_t sample;
 
-    if(value < 0) {
+    if (value < 0) {
         datatype = 0x39;
         /* Convert from 2's complement */
         sample = (uint16_t)~value + 1;

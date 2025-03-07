@@ -9,15 +9,15 @@ endif
 
 #### Required Executables ####
 ifeq ($(TOOLCHAIN),arm-none-eabi)
-CC = $(TOOLCHAIN)-gcc$(EXEEXT)
-GCC = $(TOOLCHAIN)-gcc$(EXEEXT)
-CPP = $(TOOLCHAIN)-cpp$(EXEEXT)
-LD = $(TOOLCHAIN)-ld$(EXEEXT)
-CP = $(TOOLCHAIN)-objcopy$(EXEEXT)
-OD = $(TOOLCHAIN)-objdump$(EXEEXT)
-RD = $(TOOLCHAIN)-readelf$(EXEEXT)
-AR = $(TOOLCHAIN)-ar$(EXEEXT)
-SIZE = $(TOOLCHAIN)-size$(EXEEXT)
+CC = $(TOOLCHAIN_PATH)$(TOOLCHAIN)-gcc$(EXEEXT)
+GCC = $(TOOLCHAIN_PATH)$(TOOLCHAIN)-gcc$(EXEEXT)
+CPP = $(TOOLCHAIN_PATH)$(TOOLCHAIN)-cpp$(EXEEXT)
+LD = $(TOOLCHAIN_PATH)$(TOOLCHAIN)-ld$(EXEEXT)
+CP = $(TOOLCHAIN_PATH)$(TOOLCHAIN)-objcopy$(EXEEXT)
+OD = $(TOOLCHAIN_PATH)$(TOOLCHAIN)-objdump$(EXEEXT)
+RD = $(TOOLCHAIN_PATH)$(TOOLCHAIN)-readelf$(EXEEXT)
+AR = $(TOOLCHAIN_PATH)$(TOOLCHAIN)-ar$(EXEEXT)
+SIZE = $(TOOLCHAIN_PATH)$(TOOLCHAIN)-size$(EXEEXT)
 else ifeq ($(TOOLCHAIN),arm)
 CC = armclang$(EXEEXT)
 GCC = armclang$(EXEEXT)
@@ -75,7 +75,7 @@ endif
 LFLAGS+= -Wl,--wrap=_write_r -Wl,--wrap=_close_r -Wl,--wrap=_lseek_r -Wl,--wrap=_read_r -Wl,--wrap=_kill_r -Wl,--wrap=_getpid_r -Wl,--wrap=_fstat_r -Wl,--wrap=_isatty_r
 LFLAGS+= -Wl,--gc-sections,--entry,Reset_Handler,-Map,$(BINDIR)/output.map
 LFLAGS+= -Wl,--start-group -lm -lc -lgcc -lnosys -Wl,--whole-archive $(override_libraries) -Wl,--no-whole-archive $(libraries) $(lib_prebuilt) -lstdc++ -Wl,--end-group
-LFLAGS+=
+LFLAGS+= -Wl,--print-memory-usage
 
 CPFLAGS = -Obinary
 ODFLAGS = -S
@@ -212,10 +212,6 @@ DEFINES+= NS_PROFILER_RPC_EVENTS_MAX=$(TFLM_VALIDATOR_MAX_EVENTS)
 
 ifeq ($(MLDEBUG),1)
 DEFINES+= NS_MLDEBUG
-else
-ifneq ($(MLPROFILE),1)
-DEFINES+= TF_LITE_STRIP_ERROR_STRINGS
-endif
 endif
 
 ifeq ($(AUDIO_DEBUG),1)

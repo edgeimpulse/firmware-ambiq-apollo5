@@ -69,7 +69,7 @@ extern uint32_t SystemCoreClock;
 #define configRUN_FREERTOS_SECURE_ONLY                  1
 
 /* Constants related to the behaviour or the scheduler. */
-#define configUSE_PORT_OPTIMISED_TASK_SELECTION         0
+#define configUSE_PORT_OPTIMISED_TASK_SELECTION         1
 #define configUSE_PREEMPTION                            1
 #define configUSE_TIME_SLICING                          1
 #define configMAX_PRIORITIES                            ( 8 )
@@ -95,7 +95,7 @@ extern uint32_t SystemCoreClock;
 // 	#define configCPU_CLOCK_HZ                          (96*1000000UL)
 //   #endif
 // #endif
-#define configMINIMAL_STACK_SIZE                        ( ( uint16_t ) 256 )
+#define configMINIMAL_STACK_SIZE                        ( ( uint16_t ) 1024 )
 #define configMINIMAL_SECURE_STACK_SIZE                 ( 1024 )
 #define configMAX_TASK_NAME_LEN                         ( 12 )
 #ifndef configTOTAL_HEAP_SIZE

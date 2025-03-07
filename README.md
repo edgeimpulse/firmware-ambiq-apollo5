@@ -41,11 +41,20 @@ The board will show as a USB device.
 
 To connect the Arducam to an Apollo5 EVB's IOM2 interface, make the following connections:
 
-1. Camera GND to any EVB GND
-2. Camera 5V/VDD to any EVB 5V pin
+1. Camera 5V/VDD to any EVB 5V pin
+2. Camera GND to any EVB GND
 3. Camera SCK to EVB Pin 25
 4. Camera MISO to EVB Pin 27
 5. Camera MOSI to EVB 26
 6. Camera CS to EVB 29
+
+To connect the Arducam to an Apollo5 Rev0 EVB's IOM5 interface, make the following connections:
+
+    Camera GND to any EVB GND
+    Camera 5V/VDD to any EVB 5V pin
+    Camera SCK to EVB Pin 47
+    Camera MISO to EVB Pin 49
+    Camera MOSI to EVB 48
+    Camera CS to EVB 60
 
 Arducam pinout: https://docs.arducam.com/Arduino-SPI-camera/MEGA-SPI/MEGA-Quick-Start-Guide/
