@@ -75,12 +75,12 @@ endif
 LFLAGS+= -Wl,--wrap=_write_r -Wl,--wrap=_close_r -Wl,--wrap=_lseek_r -Wl,--wrap=_read_r -Wl,--wrap=_kill_r -Wl,--wrap=_getpid_r -Wl,--wrap=_fstat_r -Wl,--wrap=_isatty_r
 LFLAGS+= -Wl,--gc-sections,--entry,Reset_Handler,-Map,$(BINDIR)/output.map
 LFLAGS+= -Wl,--start-group -lm -lc -lgcc -lnosys -Wl,--whole-archive $(override_libraries) -Wl,--no-whole-archive $(libraries) $(lib_prebuilt) -lstdc++ -Wl,--end-group
-LFLAGS+= -Wl,--print-memory-usage
+LFLAGS+=
 
 CPFLAGS = -Obinary
 ODFLAGS = -S
 ARFLAGS = rsc
-
+ASMFLAGS+= -mthumb -mcpu=$(CPU) $(FPU_FLAG) -mfloat-abi=$(FABI) 
 
 else ifeq ($(TOOLCHAIN),arm)
 # Armlink keeps removing stuff from static libs, so have to add some objs to the linker command line
@@ -89,7 +89,9 @@ ARMLINKER_IS_NO_BUENO := $(BINDIR)/neuralspot/ns-usb/src/overrides/usb_descripto
 ARMLINKER_IS_NO_BUENO += $(BINDIR)/neuralspot/ns-usb/src/overrides/webusb_controller.o
 ARMLINKER_IS_NO_BUENO += $(BINDIR)/neuralspot/ns-usb/src/overrides/ns_usb_overrides.o
 endif
+ifneq ($(ARCH),apollo3)
 ARMLINKER_IS_NO_BUENO += $(BINDIR)/extern/AmbiqSuite/$(AS_VERSION)/src/am_resources.o
+endif
 ifeq ($(ARCH),apollo5)
 ARMLINKER_IS_NO_BUENO += $(BINDIR)/neuralspot/ns-core/src/$(BOARD)/armclang/startup_keil6.o
 ARMLINKER_IS_NO_BUENO += $(BINDIR)/extern/AmbiqSuite/$(AS_VERSION)/src/am_hal_utils.o
@@ -112,12 +114,16 @@ CFLAGS+= -MMD -MP
 CCFLAGS+= -fno-use-cxa-atexit
 
 # LFLAGS+= --cpu=Cortex-M4.fp.sp --output_float_abi=hard --fpu=FPv4-SP --datacompressor=off
-LFLAGS+= --cpu=$(ARMLINK_CPU) --output_float_abi=hard --fpu=$(ARMLINK_FPU)
+ifndef LINKER_FILE
 ifeq ($(ARCH),apollo5)
-LFLAGS+= --strict --scatter "neuralspot/ns-core/src/$(BOARD)/armclang/linker_script_$(BOOTLOADER).sct" --undefined=__scatterload_copy
+LINKER_FILE := ./neuralspot/ns-core/src/$(BOARD)/armclang/linker_script_$(BOOTLOADER).sct
 else
-LFLAGS+= --strict --scatter "neuralspot/ns-core/src/$(BOARD)/armclang/linker_script.sct" --undefined=__scatterload_copy
+LINKER_FILE := ./neuralspot/ns-core/src/$(BOARD)/armclang/linker_script.sct
 endif
+endif
+
+LFLAGS+= --cpu=$(ARMLINK_CPU) --output_float_abi=hard --fpu=$(ARMLINK_FPU)
+LFLAGS+= --strict --scatter $(LINKER_FILE) --undefined=__scatterload_copy
 
 ifeq ($(USB_PRESENT),1)
 LFLAGS+= --keep=tud_cdc_rx_cb --keep=tud_cdc_tx_complete_cb --keep=tud_vendor_control_xfer_cb
@@ -171,8 +177,10 @@ else
 DEFINES+= apollo5_eb_revb
 endif
 endif
-ifeq ($(PART),apollo5b)
+# ifeq ($(PART),apollo5b)
+ifneq ($(filter apollo5b apollo510,$(PART)),)
 DEFINES+= AM_PART_APOLLO5B
+DEFINES+= AM_PART_APOLLO510
 ifeq ($(EVB),eb)
 DEFINES+= apollo5_eb
 else 
@@ -212,6 +220,10 @@ DEFINES+= NS_PROFILER_RPC_EVENTS_MAX=$(TFLM_VALIDATOR_MAX_EVENTS)
 
 ifeq ($(MLDEBUG),1)
 DEFINES+= NS_MLDEBUG
+else
+ifneq ($(MLPROFILE),1)
+DEFINES+= TF_LITE_STRIP_ERROR_STRINGS
+endif
 endif
 
 ifeq ($(AUDIO_DEBUG),1)

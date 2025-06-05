@@ -5,14 +5,17 @@
 # AS_VERSION := R3.1.1
 
 # *** Apollo4 Plus
-# PLATFORM := apollo4l
-# PLATFORM := apollo4p_blue_kxr_evb
+# PLATFORM := apollo4p_evb
+# PLATFORM := apollo4l_blue_evb
+# PLATFORM := apollo4l_evb
+# PLATFORM := apollo4p_blue_kbr_evb
 # AS_VERSION := R4.5.0
+# AS_VERSION := R4.4.1
 
 # *** Apollo510 EVB
 PLATFORM := apollo510_evb
-AS_VERSION := R5.2.0
-
+# AS_VERSION := R5.3.0
+#TOOLCHAIN_PATH := /path/to/arm/gcc
 # *** Apollo510 Revb EB
 # PLATFORM := apollo5b_eb_revb
 # AS_VERSION := Apollo510_SDK3_2024_09_14
@@ -23,13 +26,16 @@ AS_VERSION := R5.2.0
 
 # TF_VERSION := Oct_08_2024_e86d97b6
 # TF_VERSION := ns_tflm_2024_11_25
+# TF_VERSION := ns_tflm_2025_03_06
+# TF_VERSION := ns_tflm_v1_0_0
 # TF_VERSION := d5f819d_Aug_10_2023
 # TF_VERSION := ce72f7b8_Feb_17_2024
 # TF_VERSION := bb4fc83d_Mar_28_2024
 # TF_VERSION := Aug_23_2024_c01ca97f
 # TF_VERSION := tanh
 
-# TOOLCHAIN_PATH := 
+# CMSIS_DSP_VERSION := CMSIS-DSP-1.16.2
+
 # TOOLCHAIN := arm
 # EXAMPLE := nnse2
 # TARGET := nnse2

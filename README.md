@@ -1,17 +1,16 @@
 # Firmware for Ambiq Apollo 5
-
-Edge Impulse firmware for Ambiq Apollo 5 EVB (apollo510_evb)
+Edge Impulse firmware for Ambiq Apollo510 EVB (apollo510_evb)
+[Ambiq Apollo510](https://docs.edgeimpulse.com/docs/edge-ai-hardware/mcu/ambiq-apollo510)
 
 ## Prerequisites
-Apollo 5 EVB
-GCC v13.x.x
-[Segger Jlink software](https://www.segger.com/downloads/jlink/) version should be >= 8.00
+[Apollo510 EVB](https://ambiq.com/apollo510/)
+[GCC v13.3.1](https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads/13-3-rel1)
+[Segger Jlink software](https://www.segger.com/downloads/jlink/) version should be >= 8.00.
 
 ## Import you model
-You can deploy your model as a C++ library, then unzip the content of your deployment and copy the content in sr/edge-impulse.
+You can deploy your model as a C++ library, then unzip the content of your deployment and copy the content in [src/edge-impulse](src/edge-impulse/).
 
 ## Build
-
 To build the application:
 ```
 make -j
@@ -37,8 +36,11 @@ To start a debug session, make sure to connect the board to J6 (JLINK USB) and p
 Connect USB-C cables to both APOLLO5 USB connector.
 The board will show as a USB device.
 
-## Camera connection
+> [!NOTE]
+> By default, USB is used. If you need to switch to UART, modify [Makefile](Makefile) as follow:
+> `DEFINES += EI_APOLLO_USE_UART=1					# 0 Use USB, 1 Use UART`
 
+## Camera connection
 To connect the Arducam to an Apollo5 EVB's IOM2 interface, make the following connections:
 
 1. Camera 5V/VDD to any EVB 5V pin

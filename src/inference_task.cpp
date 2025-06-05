@@ -42,7 +42,7 @@
 
 // Inference task parameters
 #define INFRENCE_TASK_STACK_SIZE_BYTE        (4096u)
-#define INFRENCE_TASK_PRIORITY               (configMAX_PRIORITIES - 7)
+#define INFRENCE_TASK_PRIORITY               (configMAX_PRIORITIES - 6)
 static TaskHandle_t inference_task_handle = NULL;
 static void inference_task(void *pvParameters);
 
@@ -85,6 +85,7 @@ void inference_task(void *pvParameters)
             break;
         }
         ei_run_impulse();
+        vTaskDelay(1); // Yield to other tasks
     }
 
     if (inference_task_handle != NULL) {

@@ -33,14 +33,20 @@
  */
 
 /* Include ----------------------------------------------------------------- */
-#ifndef _EI_DEVICE_APOLLO4_H_
-#define _EI_DEVICE_APOLLO4_H_
+#ifndef _EI_DEVICE_APOLLO5_H_
+#define _EI_DEVICE_APOLLO5_H_
 
 #include "firmware-sdk/ei_device_info_lib.h"
 #include "firmware-sdk/ei_device_memory.h"
 #include "ingestion-sdk-platform/sensor/ei_camera.h"
 
+#define DEFAULT_BAUD    (115200u)
+#if defined(EI_APOLLO_USE_UART) && (EI_APOLLO_USE_UART == 1)
+#define MAX_BAUD        (460800u)
+#else
 #define MAX_BAUD        (36846400u)
+#endif
+
 
 /** Sensors */
 typedef enum
@@ -57,6 +63,9 @@ private:
     ei_device_sensor_t sensors[EI_DEVICE_N_SENSORS];
     EiAmbiqCamera *camera;
 
+    bool is_sampling;
+    void (*sample_read_callback)(void);
+
 public:
     EiAmbiqApollo5(EiDeviceMemory* mem);
     ~EiAmbiqApollo5() {};
@@ -65,6 +74,13 @@ public:
     bool get_sensor_list(const ei_device_sensor_t **p_sensor_list, size_t *sensor_list_size) override;    
     EiSnapshotProperties get_snapshot_list(void) override;
     EiAmbiqCamera* get_camera(void) { return camera; };
+
+    bool start_sample_thread(void (*sample_read_cb)(void), float sample_interval_ms) override;
+    bool stop_sample_thread(void) override;
+    void sample_thread(void);
+
+    void set_default_data_output_baudrate(void) override;
+    void set_max_data_output_baudrate(void) override;
 };
 
 #endif

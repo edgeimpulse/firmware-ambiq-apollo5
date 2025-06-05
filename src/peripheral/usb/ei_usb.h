@@ -41,9 +41,13 @@
 extern "C" {
 #endif
 
+#if (EI_APOLLO_USE_UART == 0)
+
 extern int ei_usb_init(void);
 extern void ei_usb_send(uint8_t *buffer, uint32_t length);
 extern char ei_get_serial_byte(uint8_t is_inference_running);
+
+#endif
 
 #if defined(__cplusplus)
 }

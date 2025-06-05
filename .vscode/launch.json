@@ -4,7 +4,7 @@
         {
             "name": "Ambiq Apollo5 Debug (Cortex-Debug)",
             "cwd": "${workspaceFolder}",
-            "executable": "${workspaceRoot}/build/apollo5b_evb/arm-none-eabi/firmware-ambiq-apollo5.axf",            
+            "executable": "${workspaceRoot}/build/apollo510_evb/arm-none-eabi/firmware-ambiq-apollo5.axf",            
             "request": "launch",
             "type": "cortex-debug",
             "runToEntryPoint": "main",
@@ -21,7 +21,7 @@
         {
             "name": "Ambiq Apollo5 Attach (Cortex-Debug)",
             "cwd": "${workspaceFolder}",
-            "executable": "${workspaceRoot}/build/apollo5b_evb/arm-none-eabi/firmware-ambiq-apollo5.axf",            
+            "executable": "${workspaceRoot}/build/apollo510_evb/arm-none-eabi/firmware-ambiq-apollo5.axf",            
             "request": "attach",
             "type": "cortex-debug",
             "servertype": "jlink",

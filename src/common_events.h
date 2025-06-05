@@ -44,5 +44,6 @@ extern EventGroupHandle_t common_event_group;
 #define EVENT_TX_DONE                   (1 << 1)
 #define EVENT_TX_EMPTY                  (1 << 2)
 #define EVENT_WAIT_LAST_INFERENCE       (1 << 3)
+#define EVENT_INGESTION_DONE            (1 << 4)
 
 #endif /* COMMON_EVENTS_H_ */

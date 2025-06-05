@@ -65,6 +65,8 @@ typedef struct
 }
 ns_uart_config_t;
 
+extern ns_uart_config_t ns_uart_config;
+
 /**
  * @brief Initialize the UART system
  *
@@ -121,7 +123,13 @@ extern uint32_t ns_uart_nonblocking_receive_data(ns_uart_config_t *cfg, char * r
  */
 extern bool ns_uart_data_available(void);
 
-
+/**
+ * @brief Change the baud rate of the UART
+ *
+ * @param baud_rate The new baud rate to set
+ * @return uint32_t Status
+ */
+extern uint32_t ns_uart_change_baud_rate(ns_uart_handle_t uart_handle, uint32_t baud_rate);
 
     #ifdef __cplusplus
 }

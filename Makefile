@@ -94,6 +94,7 @@ DEFINES += EI_PORTING_AMBIQ=1				  # Enable CMSIS-DSP optimized features
 #DEFINES += HEAP_SIZE=4096
 DEFINES += EI_SENSOR_AQ_STREAM=FILE
 DEFINES += EI_TENSOR_ARENA_LOCATION=".shared"
+DEFINES += EI_APOLLO_USE_UART=0					# 0 Use USB, 1 Use UART
 
 LOCAL_INCLUDES += src/
 LOCAL_INCLUDES += src/ns-core/
@@ -109,12 +110,14 @@ CFLAGS += -flax-vector-conversions
 CFLAGS     += $(addprefix -D,$(DEFINES))
 CFLAGS     += $(addprefix -I includes/,$(INCLUDES))
 CFLAGS     += $(addprefix -I ,$(LOCAL_INCLUDES))
+
 ifeq ($(TOOLCHAIN),arm)
-LINKER_FILE := src/ns-core/$(BOARD)/$(COMPDIR)/linker_script.sct
+LINKER_FILE := src/ns-core/$(BOARD)/$(COMPDIR)/linker_script_$(BOOTLOADER).sct
 else ifeq ($(TOOLCHAIN),arm-none-eabi)
 LINKER_FILE := src/ns-core/$(BOARD)/$(COMPDIR)/linker_script_$(BOOTLOADER).ld
+LFLAGS+= -Wl,--print-memory-usage
+LFLAGS+= -Wl,--no-warn-rwx-segments
 endif
-
 all: $(BINDIR) $(objects) $(targets)
 
 .PHONY: clean

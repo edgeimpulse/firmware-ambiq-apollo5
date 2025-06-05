@@ -34,15 +34,19 @@
  
 #include "FreeRTOS.h"
 #include "task.h"
-
 #include "peripheral/peripheral.h"
+#if defined(EI_APOLLO_USE_UART) && (EI_APOLLO_USE_UART == 1)
+#include "peripheral/uart.h"
+#else
 #include "peripheral/usb/ei_usb.h"
+#endif
 #include "common_events.h"
 #include "edge-impulse-sdk/porting/ei_classifier_porting.h"
 #include "edge-impulse/ingestion-sdk-platform/apollo5/ei_device_apollo5.h"
 #include "edge-impulse/ingestion-sdk-platform/apollo5/ei_at_handlers.h"
 #include "inference/ei_run_impulse.h"
 #include "edge-impulse/ingestion-sdk-platform/sensor/ei_mic.h"
+#include "edge-impulse/ingestion-sdk-platform/sensor/ei_imu.h"
 
 #if (configAPPLICATION_ALLOCATED_HEAP == 1)
 size_t ucHeapSize = (NS_MALLOC_HEAP_SIZE_IN_K + 4) * 1024;
@@ -51,7 +55,7 @@ uint8_t ucHeap[(NS_MALLOC_HEAP_SIZE_IN_K + 4) * 1024] __attribute__((aligned(4))
 
 // main task parameters
 #define EI_MAIN_TASK_STACK_SIZE_BYTE        (4096u)
-#define EI_MAIN_TASK_PRIORITY               (configMAX_PRIORITIES - 6)
+#define EI_MAIN_TASK_PRIORITY               (configMAX_PRIORITIES - 5)
 static TaskHandle_t ei_main_task_handle;
 static void ei_main_task(void *pvParameters);
 
@@ -65,8 +69,13 @@ EventGroupHandle_t common_event_group;
 int main(void)
 {
     peripheral_init();  // init basic peripheral, core etc
-    ei_usb_init();         // init usb
+#if defined(EI_APOLLO_USE_UART) && (EI_APOLLO_USE_UART == 1)
+    uart_init();         // init uart
+#else
+    ei_usb_init();      // init usb
+#endif
     ei_microphone_init();
+    ei_inertial_init();
         
     /* create a task to send data via usb */
     if (xTaskCreate(ei_main_task,
@@ -101,13 +110,13 @@ static void ei_main_task(void *pvParameters)
     EiAmbiqApollo5 *dev = static_cast<EiAmbiqApollo5*>(EiDeviceInfo::get_device());
     ATServer *at;
     
-    ei_printf("Edge Impulse SDK - Ambiq Apollo 5");
+    ei_printf("Edge Impulse SDK - Ambiq Apollo 5\r\n");
     ei_printf("Type AT+HELP to see a list of commands.\r\n");
     ei_printf("Starting main loop\r\n");
 
     at = ei_at_init(dev);
     at->print_prompt();
-    dev->get_camera()->init(160, 160);
+    //dev->get_camera()->init(160, 160);
 
     // Event loop
     while (1) {
@@ -119,7 +128,7 @@ static void ei_main_task(void *pvParameters)
                                         portMAX_DELAY);
 
         if (event_bit & EVENT_RX_READY) {
-            char data = ei_get_serial_byte(is_inference_running());
+            char data = ei_get_serial_byte(false);
 
             in_rx_loop = false;
 
@@ -137,7 +146,7 @@ static void ei_main_task(void *pvParameters)
 
                 in_rx_loop = true;
                 at->handle(data);
-                data = ei_get_serial_byte(is_inference_running());
+                data = ei_get_serial_byte(true);
             }
         }
 

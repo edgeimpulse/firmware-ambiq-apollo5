@@ -48,11 +48,13 @@
 
 #include "tusb.h"
 
+#if (EI_APOLLO_USE_UART == 0)
+
 static EventGroupHandle_t usb_event_group;
 
 // usb task parameters
 #define USB_TASK_STACK_SIZE_BYTE        (4096u)
-#define USB_TASK_PRIORITY               (configMAX_PRIORITIES - 1)
+#define USB_TASK_PRIORITY               (configMAX_PRIORITIES - 2)
 static TaskHandle_t usb_task_handle;
 static void usb_task(void *pvParameters);
 
@@ -75,7 +77,7 @@ static uint16_t local_rx_index = 0;
 
 static bool _usb_is_init = false;
 static bool _is_clear = false;
-static usb_handle_t usb_handle;
+static usb_handle_t usb_handle = NULL;
 
 // callbacks
 static void ei_usb_rx_cb(ns_usb_transaction_t *pTransaction);
@@ -93,7 +95,8 @@ static ns_usb_config_t usb_cdc_config = {
     .tx_bufferLength = MY_TX_BUFSIZE,
     .rx_cb = ei_usb_rx_cb,
     //.tx_cb = ei_usb_tx_cb,
-    .service_cb = ei_usb_service_cb};
+    //.service_cb = ei_usb_service_cb
+    };
 
 /**
  * @brief 
@@ -135,6 +138,8 @@ static void usb_task(void *pvParameters)
     local_rx_index = 0;
 
     _usb_is_init = true;
+
+    vTaskDelay(pdMS_TO_TICKS(5000)); // wait for USB to be ready
 
     while (1) {
         usb_local_read();        
@@ -306,3 +311,5 @@ char ei_get_serial_byte(uint8_t is_inference_running)
 
     return to_send;
 }
+
+#endif // (EI_APOLLO_USE_UART == 0)

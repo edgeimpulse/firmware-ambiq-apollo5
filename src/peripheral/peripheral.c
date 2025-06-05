@@ -52,7 +52,7 @@ const ns_power_config_t ns_pwr_config = {
     .bNeedIOM = true,
     .bNeedAlternativeUART = false,
     .b128kTCM = false,
-    //.bNeedXtal = true,
+    .bNeedXtal = true,
     };
 
 ns_timer_config_t ei_tickTimer = {
